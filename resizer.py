@@ -19,31 +19,53 @@ def get_all_file_paths(root, sort=False):
 	return file_paths
 
 
+
+class MySquareOutputImage:
+	def __init__(self, resolution, original):
+		self.resolution = resolution
+		self.original = original
+
+		path_parts = self.original.image_path.split("/original/")
+		self.output_image_wrong_path = os.path.join(path_parts[0], str(self.resolution), path_parts[1])
+		self.output_dirpath = os.path.dirname(self.output_image_wrong_path)
+		if not os.path.isdir(self.output_dirpath):
+			os.makedirs(self.output_dirpath)
+			print(f"\t\tCreated: {self.output_dirpath}")
+
+		input_filename = os.path.basename(self.original.image_path)
+		self.output_filename = f"{self.resolution}-x-{self.resolution}-{input_filename}"
+		self.output_filepath = os.path.join(self.output_dirpath, self.output_filename)
+
+
+
 class MyOriginalImage:
-	def __init__(self, image_path, idx, directory):
+	def __init__(self, image_path, directory):
+		self.ok = False
 		self.image_path = image_path
-		self.idx = idx
+		self.image = None
 		self.directory = directory
+
 		path_parts = self.image_path.split("/original/")
 		if len(path_parts) != 2:
 			print(f"\tSkipped: {self.image_path}")
 			return
 
-		for j, resolution in enumerate(RESOLUTIONS):
-			print(f"\tResolution {j+1:02}/{len(RESOLUTIONS):02} => {resolution}x{resolution}")
-			output_image_wrong_path = os.path.join(path_parts[0], str(resolution), path_parts[1])
-			output_dirpath = os.path.dirname(output_image_wrong_path)
-			if not os.path.isdir(output_dirpath):
-				os.makedirs(output_dirpath)
-				print(f"\t\tCreated: {output_dirpath}")
+		self.output_images = [MySquareOutputImage(resolution, self) for resolution in RESOLUTIONS]
+		self.ok = True
 
-			input_filename = os.path.basename(self.image_path)
-			output_filename = f"{resolution}-x-{resolution}-{input_filename}"
-			output_filepath = os.path.join(output_dirpath, output_filename)
-			if os.path.isfile(output_filepath):
-				print(f"\t\tExists: {output_filepath}")
+	def initialize_image_object(self):
+		if not self.image:
+			print(f"\t\tInitializing Image Object . . .")
+			self.image = True
+
+	def produce_output_images(self):
+		for idx, output_image in enumerate(self.output_images):
+			print(f"\tResolution {idx+1:02}/{len(RESOLUTIONS):02} => {output_image.resolution}x{output_image.resolution}")
+			if os.path.isfile(output_image.output_filepath):
+				print(f"\t\tExists: {output_image.output_filepath}")
 			else:
-				print(f"\t\tSaved: {output_filepath}")
+				self.initialize_image_object()
+				print(f"\t\tSaved: {output_image.output_filepath}")
 
 
 
@@ -62,14 +84,22 @@ class MyImageDirectory:
 
 		file_paths = get_all_file_paths(self.original_dirpath)
 		self.input_image_file_paths = [p for p in file_paths if p.endswith('.webp')]
-		self.original_images = [MyOriginalImage(x, idx, self) for idx, x in enumerate(self.input_image_file_paths)]
+		self.original_images = [MyOriginalImage(image_path, self) for image_path in self.input_image_file_paths]
 		self.ok = True
+
+	def produce_output_images(self):
+		for idx, image in enumerate(self.original_images):
+			print(f"Image {idx+1:03}/{len(self.original_images):03} => {image.image_path}")
+			image.produce_output_images()
+			break
+
 
 
 def main():
 	args = sys.argv[1:]
 	for arg in args:
 		my_dir = MyImageDirectory(arg)
+		my_dir.produce_output_images()
 
 
 if __name__ == '__main__':

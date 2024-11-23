@@ -19,24 +19,15 @@ def get_all_file_paths(root, sort=False):
 	return file_paths
 
 
-def resize_stuff(dirpath):
-	if not os.path.isdir(dirpath):
-		print(f"Not found: '{dirpath}'")
-		return
-
-	original_dirpath = os.path.join(dirpath, 'original')
-	if not os.path.isdir(original_dirpath):
-		print(f"Not found: '{original_dirpath}'")
-		return
-
-	file_paths = get_all_file_paths(original_dirpath)
-	input_image_file_paths = [p for p in file_paths if p.endswith('.webp')]
-	for i, input_image_file_path in enumerate(input_image_file_paths):
-		print(f"Image {i+1:03}/{len(input_image_file_paths):03} => {input_image_file_path}")
-		path_parts = input_image_file_path.split("/original/")
+class MyOriginalImage:
+	def __init__(self, image_path, idx, directory):
+		self.image_path = image_path
+		self.idx = idx
+		self.directory = directory
+		path_parts = self.image_path.split("/original/")
 		if len(path_parts) != 2:
-			print(f"\tSkipped: {input_image_file_path}")
-			continue
+			print(f"\tSkipped: {self.image_path}")
+			return
 
 		for j, resolution in enumerate(RESOLUTIONS):
 			print(f"\tResolution {j+1:02}/{len(RESOLUTIONS):02} => {resolution}x{resolution}")
@@ -46,17 +37,39 @@ def resize_stuff(dirpath):
 				os.makedirs(output_dirpath)
 				print(f"\t\tCreated: {output_dirpath}")
 
-			input_filename = os.path.basename(input_image_file_path)
+			input_filename = os.path.basename(self.image_path)
 			output_filename = f"{resolution}-x-{resolution}-{input_filename}"
 			output_filepath = os.path.join(output_dirpath, output_filename)
-			print(f"\t\tOutput: {output_filepath}")
-		break
+			if os.path.isfile(output_filepath):
+				print(f"\t\tExists: {output_filepath}")
+			else:
+				print(f"\t\tSaved: {output_filepath}")
+
+
+
+class MyImageDirectory:
+	def __init__(self, dirpath):
+		self.ok = False
+		self.dirpath = dirpath
+		if not os.path.isdir(self.dirpath):
+			print(f"Not found: '{self.dirpath}'")
+			return
+
+		self.original_dirpath = os.path.join(self.dirpath, 'original')
+		if not os.path.isdir(self.original_dirpath):
+			print(f"Not found: '{self.original_dirpath}'")
+			return
+
+		file_paths = get_all_file_paths(self.original_dirpath)
+		self.input_image_file_paths = [p for p in file_paths if p.endswith('.webp')]
+		self.original_images = [MyOriginalImage(x, idx, self) for idx, x in enumerate(self.input_image_file_paths)]
+		self.ok = True
 
 
 def main():
 	args = sys.argv[1:]
 	for arg in args:
-		resize_stuff(arg)
+		my_dir = MyImageDirectory(arg)
 
 
 if __name__ == '__main__':

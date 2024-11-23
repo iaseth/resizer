@@ -30,11 +30,26 @@ def resize_stuff(dirpath):
 		return
 
 	file_paths = get_all_file_paths(original_dirpath)
-	webp_file_paths = [p for p in file_paths if p.endswith('.webp')]
-	for i, webp_file_path in enumerate(webp_file_paths):
-		print(f"Image {i+1:03}/{len(webp_file_paths):03} => {webp_file_path}")
+	input_image_file_paths = [p for p in file_paths if p.endswith('.webp')]
+	for i, input_image_file_path in enumerate(input_image_file_paths):
+		print(f"Image {i+1:03}/{len(input_image_file_paths):03} => {input_image_file_path}")
+		path_parts = input_image_file_path.split("/original/")
+		if len(path_parts) != 2:
+			print(f"\tSkipped: {input_image_file_path}")
+			continue
+
 		for j, resolution in enumerate(RESOLUTIONS):
-			print(f"\tRes {j+1:02}/{len(RESOLUTIONS):02} => {resolution}x{resolution}")
+			print(f"\tResolution {j+1:02}/{len(RESOLUTIONS):02} => {resolution}x{resolution}")
+			output_image_wrong_path = os.path.join(path_parts[0], str(resolution), path_parts[1])
+			output_dirpath = os.path.dirname(output_image_wrong_path)
+			if not os.path.isdir(output_dirpath):
+				os.makedirs(output_dirpath)
+				print(f"\t\tCreated: {output_dirpath}")
+
+			input_filename = os.path.basename(input_image_file_path)
+			output_filename = f"{resolution}-x-{resolution}-{input_filename}"
+			output_filepath = os.path.join(output_dirpath, output_filename)
+			print(f"\t\tOutput: {output_filepath}")
 		break
 
 

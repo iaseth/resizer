@@ -1,6 +1,8 @@
 import os
 import sys
 
+from PIL import Image
+
 
 
 RESOLUTIONS = [
@@ -24,6 +26,7 @@ class MySquareOutputImage:
 	def __init__(self, resolution, original):
 		self.resolution = resolution
 		self.original = original
+		self.size = (self.resolution, self.resolution)
 
 		path_parts = self.original.image_path.split("/original/")
 		self.output_image_wrong_path = os.path.join(path_parts[0], str(self.resolution), path_parts[1])
@@ -35,6 +38,9 @@ class MySquareOutputImage:
 		input_filename = os.path.basename(self.original.image_path)
 		self.output_filename = f"{self.resolution}-x-{self.resolution}-{input_filename}"
 		self.output_filepath = os.path.join(self.output_dirpath, self.output_filename)
+
+	def exists(self):
+		return True if os.path.isfile(self.output_filepath) else False
 
 
 
@@ -56,16 +62,26 @@ class MyOriginalImage:
 	def initialize_image_object(self):
 		if not self.image:
 			print(f"\t\tInitializing Image Object . . .")
-			self.image = True
+			self.image = Image.open(self.image_path)
+			w, h = self.image.size
+			smaller = min(w, h)
+			mid_x = w // 2
+			mid_y = h // 2
+			offset = smaller // 2
+
+			box = (mid_x-offset, mid_y-offset, mid_x+offset, mid_y+offset)
+			self.square_img = self.image.crop(box)
 
 	def produce_output_images(self):
 		for idx, output_image in enumerate(self.output_images):
 			print(f"\tResolution {idx+1:02}/{len(RESOLUTIONS):02} => {output_image.resolution}x{output_image.resolution}")
-			if os.path.isfile(output_image.output_filepath):
-				print(f"\t\tExists: {output_image.output_filepath}")
+			if output_image.exists():
+				print(f"\t\tExists: {output_image.output_filepath} {output_image.size}")
 			else:
 				self.initialize_image_object()
-				print(f"\t\tSaved: {output_image.output_filepath}")
+				img = self.square_img.resize(output_image.size, Image.LANCZOS)
+				img.save(output_image.output_filepath)
+				print(f"\t\tSaved: {output_image.output_filepath} {output_image.size}")
 
 
 
@@ -91,7 +107,7 @@ class MyImageDirectory:
 		for idx, image in enumerate(self.original_images):
 			print(f"Image {idx+1:03}/{len(self.original_images):03} => {image.image_path}")
 			image.produce_output_images()
-			break
+			# break
 
 
 

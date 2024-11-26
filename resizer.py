@@ -6,7 +6,9 @@ from PIL import Image
 
 
 RESOLUTIONS = [
-	32, 64, 128, 192, 256, 384, 512, 1024
+	32, 48, 64, 96,
+	128, 192, 256, 384,
+	512, 1024
 ]
 
 def get_all_file_paths(root, sort=False):
